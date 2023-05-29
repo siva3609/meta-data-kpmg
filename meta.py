@@ -1,21 +1,22 @@
-import requests
-import json
+from azure.identity import DefaultAzureCredential                      #need to import the packages from azure
+from azure.mgmt.compute import ComputeManagementClient
 
-def get_aws_instance_metadata():
-    url = 'http://169.254.169.254/latest/meta-data/'
-    response = requests.get(url)
-    metadata = {}
+def get_azure_instance_metadata():
+    credential = DefaultAzureCredential()
+    subscription_id = 'YOUR_SUBSCRIPTION_ID'   #subscription details with owner access
+    resource_group = 'YOUR_RESOURCE_GROUP'     # RG name under the subscription
+    vm_name = 'YOUR_VM_NAME'
 
-    if response.status_code == 200:
-        metadata['instance_id'] = response.text.strip()
-        metadata['availability_zone'] = requests.get(url + 'placement/availability-zone').text.strip()
-        metadata['instance_type'] = requests.get(url + 'instance-type').text.strip()
-        metadata['public_ip'] = requests.get(url + 'public-ipv4').text.strip()
-        metadata['private_ip'] = requests.get(url + 'local-ipv4').text.strip()
-
+    client = ComputeManagementClient(credential, subscription_id)
+    vm = client.virtual_machines.get(resource_group, vm_name, expand='instanceView')
+    metadata = {
+        'name': vm.name,
+        'location': vm.location,
+        'vm_size': vm.hardware_profile.vm_size,
+       
+    }
     return metadata
 
-# Usage
-aws_metadata = get_aws_instance_metadata()
-json_output = json.dumps(aws_metadata, indent=4)
-print(json_output)
+azure_metadata = get_azure_instance_metadata()
+azure_metadata_json = json.dumps(azure_metadata, indent=4)
+print(azure_metadata_json)
